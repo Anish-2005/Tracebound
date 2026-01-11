@@ -1,4 +1,4 @@
-# IntentLedger (Tracebound)
+# Tracebound
 
 Agentic workflows with on-chain auditability, built for a 1-day hackathon (Weilliptic Agentic AI & On-Chain Workflows track).
 

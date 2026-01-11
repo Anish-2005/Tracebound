@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
+  <defs>
+    <linearGradient id="tb-bg" x1="32" y1="12" x2="212" y2="244" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0E1116" />
+      <stop offset="1" stop-color="#1C2230" />
+    </linearGradient>
+    <linearGradient id="tb-accent" x1="72" y1="44" x2="196" y2="200" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7FD1AE" />
+      <stop offset="1" stop-color="#5FBF9A" />
+    </linearGradient>
+    <radialGradient id="tb-glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(128 128) rotate(90) scale(94)">
+      <stop stop-color="#7FD1AE" stop-opacity="0.45" />
+      <stop offset="1" stop-color="#7FD1AE" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <rect x="12" y="12" width="232" height="232" rx="56" fill="url(#tb-bg)" />
+  <rect x="24" y="24" width="208" height="208" rx="48" fill="#0E1116" opacity="0.55" />
+
+  <circle cx="128" cy="128" r="94" fill="url(#tb-glow)" />
+  <circle cx="128" cy="128" r="82" stroke="url(#tb-accent)" stroke-width="9" fill="none" />
+  <circle cx="128" cy="128" r="62" stroke="#1F2632" stroke-width="4" fill="#0F141E" />
+
+  <path d="M78 106c24-14 48-21 64-21s40 7 64 21" stroke="#7FD1AE" stroke-width="10" stroke-linecap="round" fill="none" />
+  <path d="M78 150c24 14 48 21 64 21s40-7 64-21" stroke="#5FBF9A" stroke-width="10" stroke-linecap="round" stroke-opacity="0.85" fill="none" />
+
+  <path d="M116 82v92" stroke="#E6EAF0" stroke-width="8" stroke-linecap="round" />
+  <path d="M140 90v76" stroke="#7FD1AE" stroke-width="8" stroke-linecap="round" />
+
+  <circle cx="128" cy="128" r="10" fill="#7FD1AE" />
+  <circle cx="128" cy="128" r="4" fill="#0E1116" />
+
+  <circle cx="88" cy="96" r="5" fill="#7FD1AE" />
+  <circle cx="168" cy="160" r="5" fill="#7FD1AE" />
+</svg>

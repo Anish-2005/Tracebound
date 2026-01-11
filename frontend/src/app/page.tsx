@@ -68,15 +68,19 @@ export default function Page() {
                         <div className="rounded border border-ledger-line/60 bg-ledger-bg/60 p-2">
                             <div className="font-plex text-[11px] font-semibold text-ledger-text">Intents</div>
                             <ul className="mt-1 space-y-1">
-                                {(output.intents as Array<Record<string, unknown>>).map((intent, idx) => (
-                                    <li key={`intent-${idx}`} className="flex items-start gap-2">
-                                        <span className="mt-[2px] h-1.5 w-1.5 rounded-full bg-ledger-accent" />
-                                        <div>
-                                            <div className="font-semibold text-ledger-text">{intent.summary as string}</div>
-                                            {intent.id && <div className="font-mono text-[10px] text-ledger-muted">{intent.id as string}</div>}
-                                        </div>
-                                    </li>
-                                ))}
+                                {(output.intents as Array<Record<string, unknown>>).map((intent, idx) => {
+                                    const summary = typeof intent.summary === "string" ? intent.summary : "";
+                                    const intentId = typeof intent.id === "string" ? intent.id : undefined;
+                                    return (
+                                        <li key={`intent-${idx}`} className="flex items-start gap-2">
+                                            <span className="mt-[2px] h-1.5 w-1.5 rounded-full bg-ledger-accent" />
+                                            <div>
+                                                <div className="font-semibold text-ledger-text">{summary}</div>
+                                                {intentId && <div className="font-mono text-[10px] text-ledger-muted">{intentId}</div>}
+                                            </div>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         </div>
                     )}
@@ -243,7 +247,10 @@ export default function Page() {
         <div className="min-h-screen bg-ledger-bg text-ledger-text">
             <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 px-5 py-6 lg:px-10">
                 <header className="pb-2.5">
-                    <div className="text-xl font-plex font-semibold tracking-tight">IntentLedger</div>
+                    <div className="flex items-center gap-3">
+                        <img src="/logo.svg" alt="Tracebound logo" className="h-9 w-9" />
+                        <div className="text-xl font-plex font-semibold tracking-tight">Tracebound</div>
+                    </div>
                     <div className="text-sm text-ledger-muted">Verifiable Agent Workflows</div>
                     <div className="mt-2 h-px bg-ledger-line" />
                 </header>
