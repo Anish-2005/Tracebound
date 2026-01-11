@@ -14,7 +14,15 @@ app.use(morgan("dev"));
 const contractClient = buildContractClientFromEnv(process.env);
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", onchain: contractClient.isEnabled() });
+  const onchain = contractClient.isEnabled();
+  res.json({
+    status: "ok",
+    onchain,
+    contractAddress: onchain && contractClient.contract ? contractClient.contract.target : null,
+    rpcConfigured: Boolean(process.env.RPC_URL),
+    timestamp: new Date().toISOString(),
+    uptimeSeconds: Math.round(process.uptime()),
+  });
 });
 
 app.post("/workflow/parse", (req, res) => {
