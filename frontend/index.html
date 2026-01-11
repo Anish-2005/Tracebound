@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tracebound</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #38bdf8;
+      --muted: #cbd5e1;
+      --text: #e2e8f0;
+      --success: #34d399;
+      --failure: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 20% 20%, #0b1226, #0f172a 40%),
+                  radial-gradient(circle at 80% 0%, rgba(56, 189, 248, 0.1), transparent 45%),
+                  radial-gradient(circle at 0% 80%, rgba(52, 211, 153, 0.08), transparent 40%),
+                  #0f172a;
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .brand {
+      font-size: 24px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    }
+    textarea {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      color: var(--text);
+      padding: 14px;
+      resize: vertical;
+      min-height: 120px;
+    }
+    button {
+      background: linear-gradient(135deg, var(--accent), #7dd3fc);
+      color: #0f172a;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 12px 30px rgba(56, 189, 248, 0.35);
+    }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 16px; }
+    .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; border: 1px solid rgba(255, 255, 255, 0.1); }
+    .success { color: var(--success); border-color: rgba(52, 211, 153, 0.4); }
+    .failure { color: var(--failure); border-color: rgba(248, 113, 113, 0.4); }
+    .timeline { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+    .timeline-item { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 12px; }
+    .muted { color: var(--muted); font-size: 14px; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="brand">Tracebound</div>
+      <div class="muted">Agentic workflow → on-chain audit</div>
+    </div>
+    <button id="demoBtn" type="button">Use demo prompt</button>
+  </header>
+
+  <section class="card">
+    <h3>Natural language instruction</h3>
+    <textarea id="instruction" placeholder="e.g., Coordinate vendor outreach and send a daily status digest to the ops team."></textarea>
+    <div style="display:flex; gap:12px; align-items:center; margin-top:12px;">
+      <button id="runBtn">Run workflow</button>
+      <span id="status" class="muted">Idle</span>
+    </div>
+  </section>
+
+  <div class="grid" style="margin-top:20px;">
+    <section class="card">
+      <h3>Workflow steps</h3>
+      <ul id="steps" class="timeline"></ul>
+    </section>
+    <section class="card">
+      <h3>On-chain log</h3>
+      <div id="chainStatus" class="muted">Waiting...</div>
+      <ul id="txList" class="timeline" style="margin-top:12px;"></ul>
+    </section>
+  </div>
+
+  <script>
+    const instructionEl = document.getElementById('instruction');
+    const statusEl = document.getElementById('status');
+    const stepsEl = document.getElementById('steps');
+    const txListEl = document.getElementById('txList');
+    const chainStatusEl = document.getElementById('chainStatus');
+    const runBtn = document.getElementById('runBtn');
+    const demoBtn = document.getElementById('demoBtn');
+
+    demoBtn.onclick = () => {
+      instructionEl.value = 'Triage inbound vendor tickets, escalate risky items, and send a summary to compliance.';
+    };
+
+    async function run() {
+      const instruction = instructionEl.value.trim();
+      if (!instruction) {
+        alert('Please provide an instruction.');
+        return;
+      }
+      runBtn.disabled = true;
+      statusEl.textContent = 'Running...';
+      stepsEl.innerHTML = '';
+      txListEl.innerHTML = '';
+      chainStatusEl.textContent = 'Pending...';
+
+      try {
+        const res = await fetch('http://localhost:4000/workflow/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ instruction })
+        });
+        const data = await res.json();
+        renderTimeline(data.timeline || []);
+        renderChain(data.chain || {});
+        statusEl.textContent = `Finished with ${data.finalStatus}`;
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Error running workflow';
+      } finally {
+        runBtn.disabled = false;
+      }
+    }
+
+    function renderTimeline(timeline) {
+      stepsEl.innerHTML = '';
+      timeline.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'timeline-item';
+        const badge = `<span class="pill ${item.status === 'success' ? 'success' : 'failure'}">${item.status}</span>`;
+        const summary = JSON.stringify(item.output || {}, null, 2);
+        li.innerHTML = `<div style="display:flex; justify-content:space-between; gap:12px; align-items:center;">
+            <div><strong>${item.step.agent_name}</strong> — ${item.step.action}</div>
+            ${badge}
+          </div>
+          <pre style="white-space:pre-wrap; word-break:break-word; margin:8px 0 0; font-size:13px; color:var(--muted);">${summary}</pre>`;
+        stepsEl.appendChild(li);
+      });
+    }
+
+    function renderChain(chain) {
+      if (!chain || !chain.workflowId) {
+        chainStatusEl.textContent = 'On-chain disabled or not configured';
+        return;
+      }
+      chainStatusEl.textContent = `Workflow ID: ${chain.workflowId}`;
+      txListEl.innerHTML = '';
+      (chain.txs || []).forEach(tx => {
+        const li = document.createElement('li');
+        li.className = 'timeline-item';
+        li.innerHTML = `<div><strong>${tx.type}</strong> ${tx.stepId ? `(${tx.stepId})` : ''}</div>
+          <a href="https://sepolia.etherscan.io/tx/${tx.hash}" target="_blank" rel="noreferrer">${tx.hash}</a>`;
+        txListEl.appendChild(li);
+      });
+    }
+
+    runBtn.onclick = run;
+  </script>
+</body>
+</html>
