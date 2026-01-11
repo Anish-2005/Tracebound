@@ -46,6 +46,114 @@ export default function Page() {
     const [focused, setFocused] = useState<boolean>(false);
     const apiBase = useMemo(() => API_BASE.replace(/\/$/, ""), []);
 
+    const isPlainObject = (val: unknown): val is Record<string, unknown> =>
+        !!val && typeof val === "object" && !Array.isArray(val);
+
+    const renderTimelineOutput = (output: unknown) => {
+        if (!output || !isPlainObject(output) || Object.keys(output).length === 0) {
+            return <div className="group-open:mb-2 mt-2 text-xs italic text-ledger-muted">No output generated for this step.</div>;
+        }
+
+        const hasIntents = Array.isArray(output.intents);
+        const hasPlan = Array.isArray(output.plan);
+        const hasMessage = typeof output.message === "string";
+        const hasNote = typeof output.note === "string";
+        const hasStatusText = typeof output.status === "string";
+        const hasCheckedAgainst = Array.isArray(output.checkedAgainst);
+
+        if (hasIntents || hasPlan || hasMessage || hasNote || hasStatusText || hasCheckedAgainst) {
+            return (
+                <div className="group-open:mb-2 mt-3 space-y-2 text-xs text-ledger-muted">
+                    {hasIntents && (
+                        <div className="rounded border border-ledger-line/60 bg-ledger-bg/60 p-2">
+                            <div className="font-plex text-[11px] font-semibold text-ledger-text">Intents</div>
+                            <ul className="mt-1 space-y-1">
+                                {(output.intents as Array<Record<string, unknown>>).map((intent, idx) => (
+                                    <li key={`intent-${idx}`} className="flex items-start gap-2">
+                                        <span className="mt-[2px] h-1.5 w-1.5 rounded-full bg-ledger-accent" />
+                                        <div>
+                                            <div className="font-semibold text-ledger-text">{intent.summary as string}</div>
+                                            {intent.id && <div className="font-mono text-[10px] text-ledger-muted">{intent.id as string}</div>}
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {hasPlan && (
+                        <div className="rounded border border-ledger-line/60 bg-ledger-bg/60 p-2">
+                            <div className="font-plex text-[11px] font-semibold text-ledger-text">Plan</div>
+                            <ul className="mt-1 space-y-1">
+                                {(output.plan as Array<Record<string, unknown>>).map((step, idx) => (
+                                    <li key={`plan-${idx}`} className="flex items-start gap-2">
+                                        <span className="mt-[2px] h-1.5 w-1.5 rounded-full bg-ledger-accent" />
+                                        <div className="space-y-0.5">
+                                            <div className="font-semibold text-ledger-text">{step.action as string}</div>
+                                            <div className="text-[11px] text-ledger-muted">
+                                                Owner: {step.owner as string} · Order: {step.order as number}
+                                            </div>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {(hasStatusText || hasCheckedAgainst) && (
+                        <div className="rounded border border-ledger-line/60 bg-ledger-bg/60 p-2">
+                            <div className="font-plex text-[11px] font-semibold text-ledger-text">Policy Check</div>
+                            {hasStatusText && (
+                                <div className="mt-1 inline-flex items-center gap-2 rounded-full border border-ledger-line/60 px-2 py-1 font-semibold text-ledger-text">
+                                    <span className="h-2 w-2 rounded-full bg-ledger-accent" />
+                                    {output.status as string}
+                                </div>
+                            )}
+                            {hasCheckedAgainst && (
+                                <div className="mt-2 space-y-1">
+                                    <div className="text-[11px] font-semibold text-ledger-text">Checked Against</div>
+                                    <ul className="flex flex-wrap gap-1 text-[11px]">
+                                        {(output.checkedAgainst as string[]).map((risk) => (
+                                            <li key={risk} className="rounded-full border border-ledger-line/60 px-2 py-0.5 text-ledger-muted">
+                                                {risk}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {hasMessage && (
+                        <div className="rounded border border-ledger-line/60 bg-ledger-bg/60 p-2">
+                            <div className="font-plex text-[11px] font-semibold text-ledger-text">Message</div>
+                            <div className="mt-1 leading-relaxed">{output.message as string}</div>
+                        </div>
+                    )}
+
+                    {hasNote && (
+                        <div className="rounded border border-ledger-line/60 bg-ledger-bg/60 p-2">
+                            <div className="font-plex text-[11px] font-semibold text-ledger-text">Note</div>
+                            <div className="mt-1 leading-relaxed">{output.note as string}</div>
+                        </div>
+                    )}
+
+                    {!hasIntents && !hasPlan && !hasMessage && !hasNote && !hasStatusText && !hasCheckedAgainst && (
+                        <pre className="group-open:mb-2 mt-2 max-h-52 overflow-auto whitespace-pre-wrap break-words rounded border border-ledger-line/60 bg-ledger-bg/60 p-2 font-mono text-[11px] leading-relaxed text-ledger-muted">
+{JSON.stringify(output, null, 2)}
+                        </pre>
+                    )}
+                </div>
+            );
+        }
+
+        return (
+            <pre className="group-open:mb-2 mt-2 max-h-52 overflow-auto whitespace-pre-wrap break-words rounded border border-ledger-line/60 bg-ledger-bg/60 p-2 font-mono text-[11px] leading-relaxed text-ledger-muted">
+{JSON.stringify(output, null, 2)}
+            </pre>
+        );
+    };
+
     useEffect(() => {
         const first = presets[0];
         setInstruction(first);
@@ -248,8 +356,10 @@ export default function Page() {
                                     <span className="absolute left-2 top-4 h-2 w-2 rounded-full bg-ledger-accent" />
                                     <details className="group">
                                         <summary className="flex cursor-pointer flex-col gap-1 marker:text-transparent">
-                                            <div className="flex items-center justify-between">
-                                                <div className="font-plex text-sm font-semibold text-ledger-text">{item.step.agent}</div>
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="font-plex text-sm font-semibold text-ledger-text">
+                                                    {item.step.agent} <span className="text-ledger-muted">— {item.step.action}</span>
+                                                </div>
                                                 <span
                                                     className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
                                                         item.status === "success"
@@ -260,17 +370,8 @@ export default function Page() {
                                                     {item.status.toUpperCase()}
                                                 </span>
                                             </div>
-                                            <div className="text-xs text-ledger-muted">{item.step.action}</div>
                                         </summary>
-                                        {item.output && Object.keys(item.output as object).length > 0 ? (
-                                            <pre className="group-open:mb-2 mt-2 max-h-52 overflow-auto whitespace-pre-wrap break-words rounded border border-ledger-line/60 bg-ledger-bg/60 p-2 font-mono text-[11px] leading-relaxed text-ledger-muted">
-    {JSON.stringify(item.output, null, 2)}
-                                            </pre>
-                                        ) : (
-                                            <div className="group-open:mb-2 mt-2 text-xs italic text-ledger-muted">
-                                                No output generated for this step.
-                                            </div>
-                                        )}
+                                        {renderTimelineOutput(item.output)}
                                     </details>
                                 </li>
                             ))}
