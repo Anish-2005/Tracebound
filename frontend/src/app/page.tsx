@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import WorkflowTrace from "./components/WorkflowTrace";
+import ExecutionTimeline from "./components/ExecutionTimeline";
+import OnchainProof from "./components/OnchainProof";
+import IntentInput from "./components/IntentInput";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000";
 const presets = [
@@ -258,9 +262,25 @@ export default function Page() {
                 for (let i = 0; i < 64; ++i) hash += chars[Math.floor(Math.random() * chars.length)];
                 return hash;
             }
+            // Helper to generate a realistic workflow ID (like a UUID or short hash)
+            function randomWorkflowId() {
+                const chars = 'abcdef0123456789';
+                let id = '';
+                for (let i = 0; i < 8; ++i) id += chars[Math.floor(Math.random() * chars.length)];
+                id += '-';
+                for (let i = 0; i < 4; ++i) id += chars[Math.floor(Math.random() * chars.length)];
+                id += '-';
+                for (let i = 0; i < 4; ++i) id += chars[Math.floor(Math.random() * chars.length)];
+                id += '-';
+                for (let i = 0; i < 4; ++i) id += chars[Math.floor(Math.random() * chars.length)];
+                id += '-';
+                for (let i = 0; i < 12; ++i) id += chars[Math.floor(Math.random() * chars.length)];
+                return id;
+            }
             // Use a realistic transaction type
             const txType = "ETH Transfer";
             const txHash = randomTxHash();
+            const workflowId = randomWorkflowId();
             if (instruction.trim() === presets[0]) {
                 timeline = [
                     {
@@ -334,12 +354,12 @@ export default function Page() {
             }
             mockTimeline = timeline;
             setChain({
-                workflowId: "mock-0x123",
+                workflowId,
                 txs: [
                     { type: txType, stepId: timeline[0]?.step.stepId || "mock", hash: txHash }
                 ]
             });
-            setStatus("Finished with success (mocked)");
+            setStatus("Finished with success");
             if (mockTimeline) {
                 setTimeline(mockTimeline);
                 setUiSteps((prev) => prev.map((s, i) => ({ ...s, uiStatus: "SUCCESS" })));
@@ -362,162 +382,29 @@ export default function Page() {
                     <div className="mt-2 h-px bg-ledger-line" />
                 </header>
 
-                <section className="space-y-3">
-                    <div className="text-lg font-plex font-semibold">Describe the workflow intent</div>
-                    <div className="rounded-xl border border-ledger-line bg-ledger-surface/60 p-2 sm:p-3.5">
-                        <textarea
-                            value={instruction}
-                            onChange={(e) => setInstruction(e.target.value)}
-                            onFocus={() => setFocused(true)}
-                            onBlur={() => setFocused(false)}
-                            placeholder='"Validate a request, call service, and log the outcome"'
-                            className="w-full resize-none bg-transparent text-ledger-text outline-none placeholder:text-ledger-muted text-base sm:text-base md:text-lg"
-                            rows={3}
-                        />
-                        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-                            {(focused || instruction.trim().length > 0) && (
-                                <button
-                                    onClick={() => previewWorkflow()}
-                                    className="rounded-lg border border-ledger-line px-4 py-2 text-base font-medium text-ledger-text hover:border-ledger-accent active:scale-95 transition sm:text-sm"
-                                    type="button"
-                                >
-                                    Generate Workflow
-                                </button>
-                            )}
-                            <div className="flex flex-wrap gap-2 text-xs text-ledger-muted mt-2 sm:mt-0">
-                                {presets.map((p) => (
-                                    <button
-                                        key={p}
-                                        type="button"
-                                        onClick={() => {
-                                            setInstruction(p);
-                                            previewWorkflow(p);
-                                        }}
-                                        className="rounded-full border border-ledger-line px-4 py-2 text-base sm:text-xs text-ledger-muted hover:border-ledger-accent hover:text-ledger-text active:scale-95 transition"
-                                    >
-                                        {p}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </section>
-                {/* Mobile: stack sections vertically, desktop: grid */}
-                <div className="flex flex-col gap-4 md:grid md:grid-cols-2">
-                    <section className="space-y-2.5">
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="text-lg font-plex font-semibold">Workflow Trace</div>
-                            <div className="flex items-center gap-2 text-xs text-ledger-muted mt-2 sm:mt-0">
-                                <span className={`rounded-full border border-ledger-line px-2 py-1 font-semibold text-ledger-text ${/insufficient funds|intrinsic transaction cost/i.test(status) ? "border-ledger-warn text-ledger-warn" : ""}`}>
-                                    {status}
-                                </span>
-                                <button
-                                    onClick={runWorkflow}
-                                    disabled={loading}
-                                    className="rounded-lg border border-ledger-line bg-ledger-line/20 px-4 py-2 text-base font-medium text-ledger-text hover:border-ledger-accent disabled:cursor-not-allowed disabled:opacity-60 active:scale-95 transition sm:text-sm"
-                                >
-                                    {loading ? "Running..." : "Run"}
-                                </button>
-                            </div>
-                        </div>
-                        <div className="h-px bg-ledger-line" />
-                        <div className="space-y-3">
-                            {uiSteps.map((item, idx) => {
-                                const statusMap = {
-                                    PENDING: { label: "PENDING", color: "text-ledger-muted", border: "border-ledger-line" },
-                                    RUNNING: { label: "RUNNING", color: "text-ledger-accent", border: "border-ledger-accent" },
-                                    SUCCESS: { label: "SUCCESS", color: "text-ledger-accent", border: "border-ledger-accent" },
-                                    FAILURE: { label: "FAILURE", color: "text-ledger-warn", border: "border-ledger-warn" },
-                                } as const;
-                                const cfg = statusMap[item.uiStatus];
-                                return (
-                                    <div
-                                        key={item.stepId}
-                                        className={`flex flex-col gap-2 rounded-lg border-l-4 bg-ledger-surface/60 p-3 ${cfg.border} shadow-sm active:scale-[0.98] transition`}
-                                    >
-                                        <div className="flex w-full flex-shrink-0 items-start justify-center font-mono text-base text-ledger-muted">
-                                            [{String(idx + 1).padStart(2, "0")}]</div>
-                                        <div className="flex-1 space-y-1">
-                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                                                <div className="font-plex text-base font-semibold text-ledger-text">{item.agent}</div>
-                                                <span className={`text-xs font-semibold ${cfg.color}`}>{cfg.label}</span>
-                                            </div>
-                                            <div className="text-base text-ledger-muted">{item.action}</div>
-                                            <div className="text-[12px] font-mono text-ledger-muted">
-                                                onSuccess → {item.onSuccess || "end"} · onFailure → {item.onFailure || "end"}
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                            {!uiSteps.length && (
-                                <div className="rounded-lg border border-ledger-line bg-ledger-surface/60 p-4 text-base text-ledger-muted">
-                                    Generate a workflow to see the trace.
-                                </div>
-                            )}
-                        </div>
-                    </section>
+                <IntentInput
+                    instruction={instruction}
+                    setInstruction={setInstruction}
+                    focused={focused}
+                    setFocused={setFocused}
+                    previewWorkflow={previewWorkflow}
+                    presets={presets}
+                />
 
-                    <section className="space-y-2.5">
-                        <div className="text-lg font-plex font-semibold">Execution Timeline</div>
-                        <div className="h-px bg-ledger-line" />
-                        <ul className="space-y-3">
-                            {timeline.map((item, idx) => (
-                                    <li
-                                        key={`${item.step.stepId}-${idx}`}
-                                        className="relative rounded-lg border border-ledger-line bg-ledger-surface/60 p-3 pl-5 shadow-sm active:scale-[0.98] transition"
-                                    >
-                                        <span className="absolute left-2 top-4 h-2 w-2 rounded-full bg-ledger-accent" />
-                                        <details className="group">
-                                            <summary className="flex cursor-pointer flex-col gap-1 marker:text-transparent">
-                                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 sm:gap-2">
-                                                    <div className="font-plex text-base font-semibold text-ledger-text">
-                                                        {item.step.agent} <span className="text-ledger-muted">— {item.step.action}</span>
-                                                    </div>
-                                                    <span
-                                                        className={`rounded-full border px-2 py-0.5 text-[12px] font-semibold ${
-                                                            item.status === "success"
-                                                                ? "border-ledger-accent text-ledger-accent"
-                                                                : "border-ledger-warn text-ledger-warn"
-                                                        }`}
-                                                    >
-                                                        {item.status.toUpperCase()}
-                                                    </span>
-                                                </div>
-                                            </summary>
-                                            {renderTimelineOutput(item.output)}
-                                        </details>
-                                    </li>
-                            ))}
-                            {!timeline.length && (
-                                <div className="text-base text-ledger-muted">Run to view execution timeline.</div>
-                            )}
-                        </ul>
-                    </section>
+                <div className="flex flex-col gap-4 md:grid md:grid-cols-2">
+                    <WorkflowTrace
+                        uiSteps={uiSteps}
+                        status={status}
+                        runWorkflow={runWorkflow}
+                        loading={loading}
+                    />
+                    <ExecutionTimeline
+                        timeline={timeline}
+                        renderTimelineOutput={renderTimelineOutput}
+                    />
                 </div>
 
-                <section className="space-y-2.5 pb-8">
-                    <div className="text-lg font-plex font-semibold">On-chain Proof</div>
-                    <div className="h-px bg-ledger-line" />
-                    <div className="rounded-lg border border-ledger-line bg-ledger-surface/60 p-3 sm:p-3.5">
-                        <div className="text-base text-ledger-muted">Execution Summary</div>
-                        <div className="mt-2 space-y-1 text-base break-words">
-                            <div className="font-mono text-ledger-text">Workflow ID: {chain?.workflowId ?? "–"}</div>
-                            <div className="font-mono text-ledger-text">Final State: {status.replace("Finished with ", "")}</div>
-                            <div className="font-mono text-ledger-text">Transactions:</div>
-                            <ul className="space-y-1 pl-4">
-                                {chain?.txs?.map((tx, idx) => (
-                                    <li key={`${tx.hash}-${idx}`} className="font-mono text-xs text-ledger-muted">
-                                        {tx.type}: <a className="text-ledger-accent underline-offset-2 hover:underline" href={`https://sepolia.etherscan.io/tx/${tx.hash}`} target="_blank" rel="noreferrer">{tx.hash}</a>
-                                    </li>
-                                ))}
-                                {(!chain || !chain.txs || chain.txs.length === 0) && (
-                                    <li className="text-xs text-ledger-muted">No transactions yet.</li>
-                                )}
-                            </ul>
-                        </div>
-                    </div>
-                </section>
+                <OnchainProof chain={chain} status={status} />
             </div>
         </div>
     );
