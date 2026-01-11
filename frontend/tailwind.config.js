@@ -7,16 +7,20 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: "#0f172a",
-        card: "#1e293b",
-        accent: "#38bdf8",
-        muted: "#cbd5e1",
-        text: "#e2e8f0",
-        success: "#34d399",
-        failure: "#f87171",
+        ledger: {
+          bg: "#0E1116",
+          surface: "#141925",
+          text: "#E6EAF0",
+          muted: "#9AA4B2",
+          accent: "#7FD1AE",
+          warn: "#E06C75",
+          line: "#1C2230",
+        },
       },
       fontFamily: {
-        display: ["Space Grotesk", "Segoe UI", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        plex: ["IBM Plex Sans", "Inter", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "SFMono-Regular", "monospace"],
       },
     },
   },

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,9 +9,9 @@
 }
 
 body {
-  @apply min-h-screen bg-[#0f172a] text-slate-100 antialiased;
-  background: radial-gradient(circle at 20% 20%, #0b1226, #0f172a 40%),
-    radial-gradient(circle at 80% 0%, rgba(56, 189, 248, 0.1), transparent 45%),
-    radial-gradient(circle at 0% 80%, rgba(52, 211, 153, 0.08), transparent 40%),
-    #0f172a;
+  @apply min-h-screen bg-ledger-bg text-ledger-text antialiased font-sans;
+}
+
+* {
+  @apply selection:bg-ledger-accent/30 selection:text-ledger-bg;
 }
