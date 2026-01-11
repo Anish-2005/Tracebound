@@ -1,13 +1,25 @@
 import { ethers } from "ethers";
 
 const defaultAbi = [
-  "event WorkflowCreated(uint256 indexed workflowId, bytes32 indexed instructionHash, uint256 timestamp)",
-  "event StepRecorded(uint256 indexed workflowId, string stepId, string status, uint256 timestamp, bytes32 payloadHash)",
-  "event WorkflowFinalized(uint256 indexed workflowId, uint8 status, uint256 timestamp)",
-  "function createWorkflow(bytes32 instructionHash) returns (uint256)",
-  "function logStep(uint256 workflowId, string stepId, string status, bytes32 payloadHash)",
-  "function finalizeWorkflow(uint256 workflowId, bool success)"
+  "event WorkflowCreated(uint256 indexed workflowId, address indexed creator, bytes32 metadataHash, uint64 timestamp)",
+  "event StepRecorded(uint256 indexed workflowId, string stepId, string agentName, uint8 status, bytes32 outputHash, uint64 timestamp)",
+  "event WorkflowFinalized(uint256 indexed workflowId, uint8 status, uint64 timestamp)",
+  "function createWorkflow(bytes32 metadataHash) returns (uint256)",
+  "function recordStep(uint256 workflowId, string stepId, string agentName, uint8 status, bytes32 outputHash)",
+  "function finalizeWorkflow(uint256 workflowId, uint8 finalStatus)"
 ];
+
+const WorkflowStatus = {
+  CREATED: 0,
+  RUNNING: 1,
+  COMPLETED: 2,
+  FAILED: 3,
+};
+
+const StepStatus = {
+  SUCCESS: 0,
+  FAILURE: 1,
+};
 
 export class ContractClient {
   constructor({ rpcUrl, privateKey, contractAddress, abi = defaultAbi, enabled = true }) {
@@ -24,33 +36,31 @@ export class ContractClient {
     return this.enabled && this.contract;
   }
 
-  hashInstruction(instruction) {
-    return ethers.keccak256(ethers.toUtf8Bytes(instruction || ""));
-  }
-
   hashPayload(payload) {
     return ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(payload || {})));
   }
 
   async createWorkflow(instruction) {
     if (!this.isEnabled()) return { skipped: true };
-    const tx = await this.contract.createWorkflow(this.hashInstruction(instruction));
+    const tx = await this.contract.createWorkflow(this.hashPayload({ instruction }));
     const receipt = await tx.wait();
     const workflowId = this.#extractEventArg(receipt.logs, "WorkflowCreated", 0);
     return { workflowId, txHash: receipt.hash };
   }
 
-  async logStep(workflowId, stepId, status, payload) {
+  async logStep(workflowId, stepId, agentName, status, payload) {
     if (!this.isEnabled()) return { skipped: true };
     const payloadHash = this.hashPayload(payload);
-    const tx = await this.contract.logStep(workflowId, stepId, status, payloadHash);
+    const statusCode = status === "success" ? StepStatus.SUCCESS : StepStatus.FAILURE;
+    const tx = await this.contract.recordStep(workflowId, stepId, agentName, statusCode, payloadHash);
     const receipt = await tx.wait();
     return { txHash: receipt.hash };
   }
 
   async finalizeWorkflow(workflowId, success) {
     if (!this.isEnabled()) return { skipped: true };
-    const tx = await this.contract.finalizeWorkflow(workflowId, success);
+    const finalStatus = success ? WorkflowStatus.COMPLETED : WorkflowStatus.FAILED;
+    const tx = await this.contract.finalizeWorkflow(workflowId, finalStatus);
     const receipt = await tx.wait();
     return { txHash: receipt.hash };
   }

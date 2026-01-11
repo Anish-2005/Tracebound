@@ -4,59 +4,64 @@ import { ContractClient } from "./contractClient.js";
 function baseSteps(instruction) {
   return [
     {
-      step_id: "step-1",
-      agent_name: "IntentParserAgent",
+      stepId: "step-1",
+      agent: "IntentParserAgent",
       action: "Interpret user instruction and derive intents",
-      input: instruction,
-      conditional_next: { success: "step-2", failure: "step-4-fail" },
+      input: { instruction },
+      onSuccess: "step-2",
+      onFailure: "step-4-fail",
     },
     {
-      step_id: "step-2",
-      agent_name: "PolicyValidatorAgent",
+      stepId: "step-2",
+      agent: "PolicyCheckAgent",
       action: "Validate intents against guardrails",
-      input: "Derived intents",
-      conditional_next: { success: "step-3", failure: "step-4-fail" },
+      input: { derived: "intents" },
+      onSuccess: "step-3",
+      onFailure: "step-4-fail",
     },
     {
-      step_id: "step-3",
-      agent_name: "ExternalServiceAgent",
+      stepId: "step-3",
+      agent: "MockExternalServiceAgent",
       action: "Execute mocked external API call",
-      input: "Plan",
-      conditional_next: { success: "step-4", failure: "step-4-fail" },
+      input: { plan: "derived plan" },
+      onSuccess: "step-4",
+      onFailure: "step-4-fail",
     },
     {
-      step_id: "step-4",
-      agent_name: "LoggerAgent",
+      stepId: "step-4",
+      agent: "AuditLoggerAgent",
       action: "Summarize workflow state",
-      input: "Timeline",
-      conditional_next: { success: null, failure: null },
+      input: { timeline: true },
+      onSuccess: null,
+      onFailure: null,
     },
     {
-      step_id: "step-4-fail",
-      agent_name: "LoggerAgent",
+      stepId: "step-4-fail",
+      agent: "AuditLoggerAgent",
       action: "Log failure and halt",
-      input: "Failure reason",
-      conditional_next: { success: null, failure: null },
+      input: { failure: true },
+      onSuccess: null,
+      onFailure: null,
     },
   ];
 }
 
 export function buildWorkflow(instruction) {
   return {
-    id: `wf-${Date.now()}`,
-    instruction,
+    workflowId: `wf-${Date.now()}`,
+    intent: instruction,
     steps: baseSteps(instruction),
   };
 }
 
 export async function executeWorkflow(instruction, contractClient) {
   const workflow = buildWorkflow(instruction);
-  const stepsById = Object.fromEntries(workflow.steps.map((s) => [s.step_id, s]));
+  const stepsById = Object.fromEntries(workflow.steps.map((s) => [s.stepId, s]));
   const timeline = [];
   const context = { instruction, timeline };
   const chain = { workflowId: null, txs: [] };
 
-  let currentId = workflow.steps[0]?.step_id;
+  let currentId = workflow.steps[0]?.stepId;
 
   if (contractClient?.isEnabled()) {
     const created = await contractClient.createWorkflow(instruction);
@@ -67,7 +72,7 @@ export async function executeWorkflow(instruction, contractClient) {
   while (currentId) {
     const step = stepsById[currentId];
     if (!step) break;
-    const agent = agents[step.agent_name];
+    const agent = agents[step.agent];
     if (!agent) {
       timeline.push({ step, status: "failure", output: { error: "missing agent" } });
       break;
@@ -83,14 +88,15 @@ export async function executeWorkflow(instruction, contractClient) {
     if (chain.workflowId && contractClient?.isEnabled()) {
       const logged = await contractClient.logStep(
         chain.workflowId,
-        step.step_id,
+        step.stepId,
+        step.agent,
         status,
         result.output
       );
-      if (logged.txHash) chain.txs.push({ type: "step", stepId: step.step_id, hash: logged.txHash });
+      if (logged.txHash) chain.txs.push({ type: "step", stepId: step.stepId, hash: logged.txHash });
     }
 
-    currentId = step.conditional_next[status === "success" ? "success" : "failure"];
+    currentId = status === "success" ? step.onSuccess : step.onFailure;
   }
 
   const finalStatus = timeline.at(-1)?.status === "failure" ? "failure" : "success";

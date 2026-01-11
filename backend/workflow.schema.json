@@ -1,0 +1,38 @@
+{
+  "workflowId": "wf-<timestamp>",
+  "intent": "Natural language instruction provided by user",
+  "steps": [
+    {
+      "stepId": "step-1",
+      "agent": "IntentParserAgent",
+      "action": "Interpret user instruction and derive intents",
+      "input": {"instruction": "..."},
+      "onSuccess": "step-2",
+      "onFailure": "step-4-fail"
+    },
+    {
+      "stepId": "step-2",
+      "agent": "PolicyCheckAgent",
+      "action": "Validate intents against guardrails",
+      "input": {"derived": "intents"},
+      "onSuccess": "step-3",
+      "onFailure": "step-4-fail"
+    },
+    {
+      "stepId": "step-3",
+      "agent": "MockExternalServiceAgent",
+      "action": "Execute mocked external API call",
+      "input": {"plan": "derived plan"},
+      "onSuccess": "step-4",
+      "onFailure": "step-4-fail"
+    },
+    {
+      "stepId": "step-4",
+      "agent": "AuditLoggerAgent",
+      "action": "Summarize workflow state",
+      "input": {"timeline": true},
+      "onSuccess": null,
+      "onFailure": null
+    }
+  ]
+}

@@ -1,11 +1,11 @@
 import * as IntentParserAgent from "./intentParser.js";
-import * as PolicyValidatorAgent from "./policyValidator.js";
-import * as ExternalServiceAgent from "./externalService.js";
-import * as LoggerAgent from "./logger.js";
+import * as PolicyCheckAgent from "./policyCheck.js";
+import * as MockExternalServiceAgent from "./mockExternalService.js";
+import * as AuditLoggerAgent from "./auditLogger.js";
 
 export const registry = {
   IntentParserAgent,
-  PolicyValidatorAgent,
-  ExternalServiceAgent,
-  LoggerAgent,
+  PolicyCheckAgent,
+  MockExternalServiceAgent,
+  AuditLoggerAgent,
 };
