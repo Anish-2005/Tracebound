@@ -251,6 +251,16 @@ export default function Page() {
         function handleMockFallback() {
             let mockTimeline: TimelineItem[] | null = null;
             let timeline: TimelineItem[] = [];
+            // Helper to generate a realistic tx hash
+            function randomTxHash() {
+                const chars = 'abcdef0123456789';
+                let hash = '0x';
+                for (let i = 0; i < 64; ++i) hash += chars[Math.floor(Math.random() * chars.length)];
+                return hash;
+            }
+            // Use a realistic transaction type
+            const txType = "ETH Transfer";
+            const txHash = randomTxHash();
             if (instruction.trim() === presets[0]) {
                 timeline = [
                     {
@@ -326,10 +336,10 @@ export default function Page() {
             setChain({
                 workflowId: "mock-0x123",
                 txs: [
-                    { type: "MOCK_TX", stepId: timeline[0]?.step.stepId || "mock", hash: "0xmockedhash" }
+                    { type: txType, stepId: timeline[0]?.step.stepId || "mock", hash: txHash }
                 ]
             });
-            setStatus("Finished with success");
+            setStatus("Finished with success (mocked)");
             if (mockTimeline) {
                 setTimeline(mockTimeline);
                 setUiSteps((prev) => prev.map((s, i) => ({ ...s, uiStatus: "SUCCESS" })));
@@ -340,7 +350,7 @@ export default function Page() {
 
     return (
         <div className="min-h-screen bg-ledger-bg text-ledger-text">
-            <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 px-3 py-4 sm:px-5 sm:py-6 lg:px-10">
+            <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 px-2 py-2 sm:px-5 sm:py-6 lg:px-10">
                 <header className="pb-2.5">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                         <div className="flex items-center gap-3">
@@ -361,14 +371,14 @@ export default function Page() {
                             onFocus={() => setFocused(true)}
                             onBlur={() => setFocused(false)}
                             placeholder='"Validate a request, call service, and log the outcome"'
-                            className="w-full resize-none bg-transparent text-ledger-text outline-none placeholder:text-ledger-muted"
+                            className="w-full resize-none bg-transparent text-ledger-text outline-none placeholder:text-ledger-muted text-base sm:text-base md:text-lg"
                             rows={3}
                         />
-                        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+                        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                             {(focused || instruction.trim().length > 0) && (
                                 <button
                                     onClick={() => previewWorkflow()}
-                                    className="rounded-lg border border-ledger-line px-3 py-1.5 text-sm font-medium text-ledger-text hover:border-ledger-accent"
+                                    className="rounded-lg border border-ledger-line px-4 py-2 text-base font-medium text-ledger-text hover:border-ledger-accent active:scale-95 transition sm:text-sm"
                                     type="button"
                                 >
                                     Generate Workflow
@@ -383,7 +393,7 @@ export default function Page() {
                                             setInstruction(p);
                                             previewWorkflow(p);
                                         }}
-                                        className="rounded-full border border-ledger-line px-3 py-1 text-ledger-muted hover:border-ledger-accent hover:text-ledger-text"
+                                        className="rounded-full border border-ledger-line px-4 py-2 text-base sm:text-xs text-ledger-muted hover:border-ledger-accent hover:text-ledger-text active:scale-95 transition"
                                     >
                                         {p}
                                     </button>
@@ -392,7 +402,8 @@ export default function Page() {
                         </div>
                     </div>
                 </section>
-                <div className="grid gap-4 md:grid-cols-2">
+                {/* Mobile: stack sections vertically, desktop: grid */}
+                <div className="flex flex-col gap-4 md:grid md:grid-cols-2">
                     <section className="space-y-2.5">
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div className="text-lg font-plex font-semibold">Workflow Trace</div>
@@ -403,14 +414,14 @@ export default function Page() {
                                 <button
                                     onClick={runWorkflow}
                                     disabled={loading}
-                                    className="rounded-lg border border-ledger-line bg-ledger-line/20 px-3 py-1.5 text-sm font-medium text-ledger-text hover:border-ledger-accent disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="rounded-lg border border-ledger-line bg-ledger-line/20 px-4 py-2 text-base font-medium text-ledger-text hover:border-ledger-accent disabled:cursor-not-allowed disabled:opacity-60 active:scale-95 transition sm:text-sm"
                                 >
                                     {loading ? "Running..." : "Run"}
                                 </button>
                             </div>
                         </div>
                         <div className="h-px bg-ledger-line" />
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                             {uiSteps.map((item, idx) => {
                                 const statusMap = {
                                     PENDING: { label: "PENDING", color: "text-ledger-muted", border: "border-ledger-line" },
@@ -422,17 +433,17 @@ export default function Page() {
                                 return (
                                     <div
                                         key={item.stepId}
-                                        className={`flex flex-col sm:flex-row gap-2 sm:gap-3 rounded-lg border-l-4 bg-ledger-surface/60 p-2 sm:p-3 ${cfg.border}`}
+                                        className={`flex flex-col gap-2 rounded-lg border-l-4 bg-ledger-surface/60 p-3 ${cfg.border} shadow-sm active:scale-[0.98] transition`}
                                     >
-                                        <div className="flex w-full sm:w-12 flex-shrink-0 items-start justify-center font-mono text-sm text-ledger-muted">
+                                        <div className="flex w-full flex-shrink-0 items-start justify-center font-mono text-base text-ledger-muted">
                                             [{String(idx + 1).padStart(2, "0")}]</div>
                                         <div className="flex-1 space-y-1">
                                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                                                <div className="font-plex text-sm font-semibold text-ledger-text">{item.agent}</div>
+                                                <div className="font-plex text-base font-semibold text-ledger-text">{item.agent}</div>
                                                 <span className={`text-xs font-semibold ${cfg.color}`}>{cfg.label}</span>
                                             </div>
-                                            <div className="text-sm text-ledger-muted">{item.action}</div>
-                                            <div className="text-[11px] font-mono text-ledger-muted">
+                                            <div className="text-base text-ledger-muted">{item.action}</div>
+                                            <div className="text-[12px] font-mono text-ledger-muted">
                                                 onSuccess → {item.onSuccess || "end"} · onFailure → {item.onFailure || "end"}
                                             </div>
                                         </div>
@@ -440,7 +451,7 @@ export default function Page() {
                                 );
                             })}
                             {!uiSteps.length && (
-                                <div className="rounded-lg border border-ledger-line bg-ledger-surface/60 p-4 text-sm text-ledger-muted">
+                                <div className="rounded-lg border border-ledger-line bg-ledger-surface/60 p-4 text-base text-ledger-muted">
                                     Generate a workflow to see the trace.
                                 </div>
                             )}
@@ -450,21 +461,21 @@ export default function Page() {
                     <section className="space-y-2.5">
                         <div className="text-lg font-plex font-semibold">Execution Timeline</div>
                         <div className="h-px bg-ledger-line" />
-                        <ul className="space-y-2">
+                        <ul className="space-y-3">
                             {timeline.map((item, idx) => (
                                     <li
                                         key={`${item.step.stepId}-${idx}`}
-                                        className="relative rounded-lg border border-ledger-line bg-ledger-surface/60 p-2 sm:p-3 pl-4 sm:pl-5"
+                                        className="relative rounded-lg border border-ledger-line bg-ledger-surface/60 p-3 pl-5 shadow-sm active:scale-[0.98] transition"
                                     >
-                                        <span className="absolute left-1.5 top-4 h-2 w-2 rounded-full bg-ledger-accent" />
+                                        <span className="absolute left-2 top-4 h-2 w-2 rounded-full bg-ledger-accent" />
                                         <details className="group">
                                             <summary className="flex cursor-pointer flex-col gap-1 marker:text-transparent">
                                                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 sm:gap-2">
-                                                    <div className="font-plex text-sm font-semibold text-ledger-text">
+                                                    <div className="font-plex text-base font-semibold text-ledger-text">
                                                         {item.step.agent} <span className="text-ledger-muted">— {item.step.action}</span>
                                                     </div>
                                                     <span
-                                                        className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                                                        className={`rounded-full border px-2 py-0.5 text-[12px] font-semibold ${
                                                             item.status === "success"
                                                                 ? "border-ledger-accent text-ledger-accent"
                                                                 : "border-ledger-warn text-ledger-warn"
@@ -479,7 +490,7 @@ export default function Page() {
                                     </li>
                             ))}
                             {!timeline.length && (
-                                <div className="text-sm text-ledger-muted">Run to view execution timeline.</div>
+                                <div className="text-base text-ledger-muted">Run to view execution timeline.</div>
                             )}
                         </ul>
                     </section>
@@ -488,9 +499,9 @@ export default function Page() {
                 <section className="space-y-2.5 pb-8">
                     <div className="text-lg font-plex font-semibold">On-chain Proof</div>
                     <div className="h-px bg-ledger-line" />
-                    <div className="rounded-lg border border-ledger-line bg-ledger-surface/60 p-2 sm:p-3.5">
-                        <div className="text-sm text-ledger-muted">Execution Summary</div>
-                        <div className="mt-2 space-y-1 text-sm break-words">
+                    <div className="rounded-lg border border-ledger-line bg-ledger-surface/60 p-3 sm:p-3.5">
+                        <div className="text-base text-ledger-muted">Execution Summary</div>
+                        <div className="mt-2 space-y-1 text-base break-words">
                             <div className="font-mono text-ledger-text">Workflow ID: {chain?.workflowId ?? "–"}</div>
                             <div className="font-mono text-ledger-text">Final State: {status.replace("Finished with ", "")}</div>
                             <div className="font-mono text-ledger-text">Transactions:</div>
