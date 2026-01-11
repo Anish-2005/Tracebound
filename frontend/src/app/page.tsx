@@ -245,19 +245,21 @@ export default function Page() {
 
     return (
         <div className="min-h-screen bg-ledger-bg text-ledger-text">
-            <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 px-5 py-6 lg:px-10">
+            <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 px-3 py-4 sm:px-5 sm:py-6 lg:px-10">
                 <header className="pb-2.5">
-                    <div className="flex items-center gap-3">
-                        <img src="/logo.svg" alt="Tracebound logo" className="h-9 w-9" />
-                        <div className="text-xl font-plex font-semibold tracking-tight">Tracebound</div>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                        <div className="flex items-center gap-3">
+                            <img src="/logo.svg" alt="Tracebound logo" className="h-9 w-9" />
+                            <div className="text-xl font-plex font-semibold tracking-tight">Tracebound</div>
+                        </div>
+                        <div className="text-sm text-ledger-muted">Verifiable Agent Workflows</div>
                     </div>
-                    <div className="text-sm text-ledger-muted">Verifiable Agent Workflows</div>
                     <div className="mt-2 h-px bg-ledger-line" />
                 </header>
 
                 <section className="space-y-3">
                     <div className="text-lg font-plex font-semibold">Describe the workflow intent</div>
-                    <div className="rounded-xl border border-ledger-line bg-ledger-surface/60 p-3.5">
+                    <div className="rounded-xl border border-ledger-line bg-ledger-surface/60 p-2 sm:p-3.5">
                         <textarea
                             value={instruction}
                             onChange={(e) => setInstruction(e.target.value)}
@@ -267,7 +269,7 @@ export default function Page() {
                             className="w-full resize-none bg-transparent text-ledger-text outline-none placeholder:text-ledger-muted"
                             rows={3}
                         />
-                        <div className="mt-3 flex flex-wrap items-center gap-3">
+                        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                             {(focused || instruction.trim().length > 0) && (
                                 <button
                                     onClick={() => previewWorkflow()}
@@ -277,7 +279,7 @@ export default function Page() {
                                     Generate Workflow
                                 </button>
                             )}
-                            <div className="flex flex-wrap gap-2 text-xs text-ledger-muted">
+                            <div className="flex flex-wrap gap-2 text-xs text-ledger-muted mt-2 sm:mt-0">
                                 {presets.map((p) => (
                                     <button
                                         key={p}
@@ -295,11 +297,11 @@ export default function Page() {
                         </div>
                     </div>
                 </section>
-                <div className="grid gap-4 lg:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2">
                     <section className="space-y-2.5">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div className="text-lg font-plex font-semibold">Workflow Trace</div>
-                            <div className="flex items-center gap-2 text-xs text-ledger-muted">
+                            <div className="flex items-center gap-2 text-xs text-ledger-muted mt-2 sm:mt-0">
                                 <span className="rounded-full border border-ledger-line px-2 py-1 font-semibold text-ledger-text">
                                     {status}
                                 </span>
@@ -325,13 +327,12 @@ export default function Page() {
                                 return (
                                     <div
                                         key={item.stepId}
-                                        className={`flex gap-3 rounded-lg border-l-4 bg-ledger-surface/60 p-3 ${cfg.border}`}
+                                        className={`flex flex-col sm:flex-row gap-2 sm:gap-3 rounded-lg border-l-4 bg-ledger-surface/60 p-2 sm:p-3 ${cfg.border}`}
                                     >
-                                        <div className="flex w-12 flex-shrink-0 items-start justify-center font-mono text-sm text-ledger-muted">
-                                            [{String(idx + 1).padStart(2, "0")}]
-                                        </div>
+                                        <div className="flex w-full sm:w-12 flex-shrink-0 items-start justify-center font-mono text-sm text-ledger-muted">
+                                            [{String(idx + 1).padStart(2, "0")}]</div>
                                         <div className="flex-1 space-y-1">
-                                            <div className="flex items-center justify-between">
+                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                                                 <div className="font-plex text-sm font-semibold text-ledger-text">{item.agent}</div>
                                                 <span className={`text-xs font-semibold ${cfg.color}`}>{cfg.label}</span>
                                             </div>
@@ -356,31 +357,31 @@ export default function Page() {
                         <div className="h-px bg-ledger-line" />
                         <ul className="space-y-2">
                             {timeline.map((item, idx) => (
-                                <li
-                                    key={`${item.step.stepId}-${idx}`}
-                                    className="relative rounded-lg border border-ledger-line bg-ledger-surface/60 p-3 pl-5"
-                                >
-                                    <span className="absolute left-2 top-4 h-2 w-2 rounded-full bg-ledger-accent" />
-                                    <details className="group">
-                                        <summary className="flex cursor-pointer flex-col gap-1 marker:text-transparent">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="font-plex text-sm font-semibold text-ledger-text">
-                                                    {item.step.agent} <span className="text-ledger-muted">— {item.step.action}</span>
+                                    <li
+                                        key={`${item.step.stepId}-${idx}`}
+                                        className="relative rounded-lg border border-ledger-line bg-ledger-surface/60 p-2 sm:p-3 pl-4 sm:pl-5"
+                                    >
+                                        <span className="absolute left-1.5 top-4 h-2 w-2 rounded-full bg-ledger-accent" />
+                                        <details className="group">
+                                            <summary className="flex cursor-pointer flex-col gap-1 marker:text-transparent">
+                                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 sm:gap-2">
+                                                    <div className="font-plex text-sm font-semibold text-ledger-text">
+                                                        {item.step.agent} <span className="text-ledger-muted">— {item.step.action}</span>
+                                                    </div>
+                                                    <span
+                                                        className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                                                            item.status === "success"
+                                                                ? "border-ledger-accent text-ledger-accent"
+                                                                : "border-ledger-warn text-ledger-warn"
+                                                        }`}
+                                                    >
+                                                        {item.status.toUpperCase()}
+                                                    </span>
                                                 </div>
-                                                <span
-                                                    className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
-                                                        item.status === "success"
-                                                            ? "border-ledger-accent text-ledger-accent"
-                                                            : "border-ledger-warn text-ledger-warn"
-                                                    }`}
-                                                >
-                                                    {item.status.toUpperCase()}
-                                                </span>
-                                            </div>
-                                        </summary>
-                                        {renderTimelineOutput(item.output)}
-                                    </details>
-                                </li>
+                                            </summary>
+                                            {renderTimelineOutput(item.output)}
+                                        </details>
+                                    </li>
                             ))}
                             {!timeline.length && (
                                 <div className="text-sm text-ledger-muted">Run to view execution timeline.</div>
@@ -392,9 +393,9 @@ export default function Page() {
                 <section className="space-y-2.5 pb-8">
                     <div className="text-lg font-plex font-semibold">On-chain Proof</div>
                     <div className="h-px bg-ledger-line" />
-                    <div className="rounded-lg border border-ledger-line bg-ledger-surface/60 p-3.5">
+                    <div className="rounded-lg border border-ledger-line bg-ledger-surface/60 p-2 sm:p-3.5">
                         <div className="text-sm text-ledger-muted">Execution Summary</div>
-                        <div className="mt-2 space-y-1 text-sm">
+                        <div className="mt-2 space-y-1 text-sm break-words">
                             <div className="font-mono text-ledger-text">Workflow ID: {chain?.workflowId ?? "–"}</div>
                             <div className="font-mono text-ledger-text">Final State: {status.replace("Finished with ", "")}</div>
                             <div className="font-mono text-ledger-text">Transactions:</div>
