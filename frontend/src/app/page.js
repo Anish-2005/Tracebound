@@ -1,14 +1,13 @@
-'use client';
+"use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState } from "react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000';
-
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000";
 const demoPrompt =
-  'Triage inbound vendor tickets, escalate risky items, and send a summary to compliance.';
+  "Triage inbound vendor tickets, escalate risky items, and send a summary to compliance.";
 
 function StepCard({ item }) {
-  const badgeClass = item.status === 'success' ? 'pill success' : 'pill failure';
+  const badgeClass = item.status === "success" ? "pill success" : "pill failure";
   return (
     <li className="timeline-item">
       <div className="row">
@@ -26,8 +25,15 @@ function TxItem({ tx }) {
   return (
     <li className="timeline-item">
       <div className="row">
-        <div><strong>{tx.type}</strong>{tx.stepId ? ` (${tx.stepId})` : ''}</div>
-        <a href={`https://sepolia.etherscan.io/tx/${tx.hash}`} target="_blank" rel="noreferrer">
+        <div>
+          <strong>{tx.type}</strong>
+          {tx.stepId ? ` (${tx.stepId})` : ""}
+        </div>
+        <a
+          href={`https://sepolia.etherscan.io/tx/${tx.hash}`}
+          target="_blank"
+          rel="noreferrer"
+        >
           {tx.hash}
         </a>
       </div>
@@ -36,26 +42,26 @@ function TxItem({ tx }) {
 }
 
 export default function Page() {
-  const [instruction, setInstruction] = useState('');
+  const [instruction, setInstruction] = useState("");
   const [timeline, setTimeline] = useState([]);
   const [chain, setChain] = useState(null);
-  const [status, setStatus] = useState('Idle');
+  const [status, setStatus] = useState("Idle");
   const [loading, setLoading] = useState(false);
-  const apiBase = useMemo(() => API_BASE.replace(/\/$/, ''), []);
+  const apiBase = useMemo(() => API_BASE.replace(/\/$/, ""), []);
 
   async function runWorkflow() {
     if (!instruction.trim()) {
-      alert('Please provide an instruction.');
+      alert("Please provide an instruction.");
       return;
     }
     setLoading(true);
-    setStatus('Running...');
+    setStatus("Running...");
     setTimeline([]);
     setChain(null);
     try {
       const res = await fetch(`${apiBase}/workflow/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ instruction }),
       });
       const data = await res.json();
@@ -64,7 +70,7 @@ export default function Page() {
       setStatus(`Finished with ${data.finalStatus}`);
     } catch (err) {
       console.error(err);
-      setStatus('Error running workflow');
+      setStatus("Error running workflow");
     } finally {
       setLoading(false);
     }
@@ -91,7 +97,7 @@ export default function Page() {
         />
         <div className="row" style={{ marginTop: 12 }}>
           <button onClick={runWorkflow} disabled={loading}>
-            {loading ? 'Running...' : 'Run workflow'}
+            {loading ? "Running..." : "Run workflow"}
           </button>
           <span className="muted">{status}</span>
         </div>
@@ -110,7 +116,9 @@ export default function Page() {
         <section className="card">
           <h3>On-chain log</h3>
           <div className="muted small">
-            {chain?.workflowId ? `Workflow ID: ${chain.workflowId}` : 'On-chain disabled or pending'}
+            {chain?.workflowId
+              ? `Workflow ID: ${chain.workflowId}`
+              : "On-chain disabled or pending"}
           </div>
           <ul className="timeline">
             {chain?.txs?.map((tx, idx) => (
