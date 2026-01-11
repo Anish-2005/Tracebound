@@ -1,0 +1,35 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_20-8fc42e976fac01cd89fbf3538bdbb502e40fd6fa",
+  "solcVersion": "0.8.20",
+  "solcLongVersion": "0.8.20+commit.a1b79de6",
+  "userSourceNameMap": {
+    "contracts/IntentLedger.sol": "project/contracts/IntentLedger.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "shanghai",
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/IntentLedger.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.20;\r\n\r\n/// @title IntentLedger - Minimal on-chain audit log for agentic workflows\r\n/// @notice Designed for hackathon use: favor readability, low gas, and explicit states.\r\ncontract IntentLedger {\r\n    enum WorkflowStatus {\r\n        CREATED,\r\n        RUNNING,\r\n        COMPLETED,\r\n        FAILED\r\n    }\r\n\r\n    enum StepStatus {\r\n        SUCCESS,\r\n        FAILURE\r\n    }\r\n\r\n    struct Workflow {\r\n        address creator;\r\n        bytes32 metadataHash; // off-chain workflow/intent hash\r\n        WorkflowStatus status;\r\n        uint64 createdAt;\r\n        uint64 updatedAt;\r\n    }\r\n\r\n    struct StepLog {\r\n        string stepId;\r\n        string agentName;\r\n        StepStatus status;\r\n        bytes32 outputHash; // hash of off-chain step output for auditability\r\n        uint64 timestamp;\r\n    }\r\n\r\n    uint256 private _nextWorkflowId = 1;\r\n    mapping(uint256 => Workflow) public workflows;\r\n    mapping(uint256 => StepLog[]) private _stepLogs;\r\n\r\n    event WorkflowCreated(uint256 indexed workflowId, address indexed creator, bytes32 metadataHash, uint64 timestamp);\r\n    event StepRecorded(\r\n        uint256 indexed workflowId,\r\n        string stepId,\r\n        string agentName,\r\n        StepStatus status,\r\n        bytes32 outputHash,\r\n        uint64 timestamp\r\n    );\r\n    event WorkflowFinalized(uint256 indexed workflowId, WorkflowStatus status, uint64 timestamp);\r\n\r\n    /// @notice Create a new workflow record. Status is set to RUNNING so steps can be appended immediately.\r\n    function createWorkflow(bytes32 metadataHash) external returns (uint256 workflowId) {\r\n        workflowId = _nextWorkflowId++;\r\n        workflows[workflowId] = Workflow({\r\n            creator: msg.sender,\r\n            metadataHash: metadataHash,\r\n            status: WorkflowStatus.RUNNING,\r\n            createdAt: uint64(block.timestamp),\r\n            updatedAt: uint64(block.timestamp)\r\n        });\r\n        emit WorkflowCreated(workflowId, msg.sender, metadataHash, uint64(block.timestamp));\r\n    }\r\n\r\n    /// @notice Append a step execution log while workflow is RUNNING.\r\n    function recordStep(\r\n        uint256 workflowId,\r\n        string calldata stepId,\r\n        string calldata agentName,\r\n        StepStatus status,\r\n        bytes32 outputHash\r\n    ) external {\r\n        Workflow storage wf = workflows[workflowId];\r\n        require(wf.status == WorkflowStatus.RUNNING, \"workflow not running\");\r\n\r\n        _stepLogs[workflowId].push(\r\n            StepLog({\r\n                stepId: stepId,\r\n                agentName: agentName,\r\n                status: status,\r\n                outputHash: outputHash,\r\n                timestamp: uint64(block.timestamp)\r\n            })\r\n        );\r\n\r\n        wf.updatedAt = uint64(block.timestamp);\r\n        emit StepRecorded(workflowId, stepId, agentName, status, outputHash, uint64(block.timestamp));\r\n    }\r\n\r\n    /// @notice Finalize a workflow; once finalized it cannot be reopened.\r\n    /// @param finalStatus Must be COMPLETED or FAILED.\r\n    function finalizeWorkflow(uint256 workflowId, WorkflowStatus finalStatus) external {\r\n        Workflow storage wf = workflows[workflowId];\r\n        require(wf.status == WorkflowStatus.RUNNING, \"workflow closed\");\r\n        require(\r\n            finalStatus == WorkflowStatus.COMPLETED || finalStatus == WorkflowStatus.FAILED,\r\n            \"invalid final status\"\r\n        );\r\n\r\n        wf.status = finalStatus;\r\n        wf.updatedAt = uint64(block.timestamp);\r\n        emit WorkflowFinalized(workflowId, finalStatus, uint64(block.timestamp));\r\n    }\r\n\r\n    /// @notice Helper to fetch step logs for off-chain consumers.\r\n    function getStepLogs(uint256 workflowId) external view returns (StepLog[] memory) {\r\n        return _stepLogs[workflowId];\r\n    }\r\n}\r\n"
+      }
+    }
+  }
+}
