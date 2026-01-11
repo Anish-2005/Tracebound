@@ -1,5 +1,5 @@
 export async function run(step, context) {
-  const raw = step.input || context.instruction || "";
+  const raw = (step.input && step.input.instruction) || context.instruction || "";
   const sentences = raw
     .split(/[.\n]/)
     .map((s) => s.trim())
@@ -13,7 +13,7 @@ export async function run(step, context) {
   const plan = intents.map((intent, idx) => ({
     order: idx + 1,
     action: intent.summary,
-    owner: "ExternalServiceAgent",
+    owner: "MockExternalServiceAgent",
   }));
 
   context.intents = intents;

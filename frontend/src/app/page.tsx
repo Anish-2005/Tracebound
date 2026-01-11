@@ -3,13 +3,18 @@
 import { useMemo, useState } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000";
-const demoPrompt =
-  "Triage inbound vendor tickets, escalate risky items, and send a summary to compliance.";
+const presets = [
+  "Handle a support issue and log resolution",
+  "Validate request, call service, and record outcome",
+  "Coordinate vendor outreach and send a daily status digest",
+];
 
 type Step = {
-  step_id: string;
-  agent_name: string;
+  stepId: string;
+  agent: string;
   action: string;
+  onSuccess: string | null;
+  onFailure: string | null;
 };
 
 type TimelineItem = {
@@ -29,6 +34,8 @@ type ChainInfo = {
   txs?: Tx[];
 } | null;
 
+type UiStep = Step & { uiStatus: "PENDING" | "RUNNING" | "SUCCESS" | "FAILURE" };
+
 function StepCard({ item }: { item: TimelineItem }) {
   const badgeClass =
     item.status === "success"
@@ -38,7 +45,7 @@ function StepCard({ item }: { item: TimelineItem }) {
     <li className="rounded-xl border border-white/5 bg-white/5 p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <span className="font-semibold text-slate-50">{item.step.agent_name}</span>
+          <span className="font-semibold text-slate-50">{item.step.agent}</span>
           <span className="text-slate-300"> — {item.step.action}</span>
         </div>
         <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${badgeClass}`}>
@@ -75,17 +82,68 @@ function TxItem({ tx }: { tx: Tx }) {
 
 export default function Page() {
   const [instruction, setInstruction] = useState<string>("");
+  const [workflowSteps, setWorkflowSteps] = useState<Step[]>([]);
+  const [uiSteps, setUiSteps] = useState<UiStep[]>([]);
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [chain, setChain] = useState<ChainInfo>(null);
   const [status, setStatus] = useState<string>("Idle");
   const [loading, setLoading] = useState<boolean>(false);
   const apiBase = useMemo(() => API_BASE.replace(/\/$/, ""), []);
 
+  // Initialize with first preset
+  useMemo(() => {
+    const first = presets[0];
+    setInstruction(first);
+    previewWorkflow(first);
+  }, []);
+
+  async function previewWorkflow(value?: string) {
+    const intent = (value ?? instruction).trim();
+    if (!intent) return;
+    try {
+      const res = await fetch(`${apiBase}/workflow/parse`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instruction: intent }),
+      });
+      const data = await res.json();
+      const steps = (data.workflow?.steps as Step[]) || [];
+      setWorkflowSteps(steps);
+      setUiSteps(steps.map((s) => ({ ...s, uiStatus: "PENDING" })));
+      setStatus("Ready to run");
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function playTimeline(execTimeline: TimelineItem[]) {
+    // Start from pending
+    setUiSteps((prev) => prev.map((s) => ({ ...s, uiStatus: "PENDING" })));
+    for (const item of execTimeline) {
+      const id = item.step.stepId;
+      setUiSteps((prev) =>
+        prev.map((s) =>
+          s.stepId === id ? { ...s, uiStatus: "RUNNING" } : s
+        )
+      );
+      await new Promise((r) => setTimeout(r, 300));
+      setUiSteps((prev) =>
+        prev.map((s) =>
+          s.stepId === id
+            ? { ...s, uiStatus: item.status === "success" ? "SUCCESS" : "FAILURE" }
+            : s
+        )
+      );
+      if (item.status !== "success") break; // stop when branch fails
+    }
+  }
+
   async function runWorkflow() {
     if (!instruction.trim()) {
       alert("Please provide an instruction.");
       return;
     }
+    await previewWorkflow();
     setLoading(true);
     setStatus("Running...");
     setTimeline([]);
@@ -100,10 +158,14 @@ export default function Page() {
         timeline?: TimelineItem[];
         chain?: ChainInfo;
         finalStatus?: string;
+        workflow?: { steps: Step[] };
       };
-      setTimeline(data.timeline ?? []);
+      setWorkflowSteps(data.workflow?.steps || workflowSteps);
+      const execTimeline = data.timeline ?? [];
+      setTimeline(execTimeline);
       setChain(data.chain ?? null);
       setStatus(`Finished with ${data.finalStatus}`);
+      await playTimeline(execTimeline);
     } catch (err) {
       console.error(err);
       setStatus("Error running workflow");
@@ -121,13 +183,21 @@ export default function Page() {
           </div>
           <div className="text-sm text-slate-300">Agentic workflow → on-chain audit</div>
         </div>
-        <button
-          type="button"
-          onClick={() => setInstruction(demoPrompt)}
-          className="rounded-xl bg-sky-400 px-4 py-2 text-slate-900 shadow-lg shadow-sky-400/40 transition hover:translate-y-px"
-        >
-          Use demo prompt
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {presets.map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => {
+                setInstruction(p);
+                previewWorkflow(p);
+              }}
+              className="rounded-xl bg-sky-400 px-4 py-2 text-slate-900 shadow-lg shadow-sky-400/40 transition hover:translate-y-px"
+            >
+              {p}
+            </button>
+          ))}
+        </div>
       </header>
 
       <section className="rounded-2xl border border-white/5 bg-[#1e293b] p-5 shadow-2xl shadow-black/40">
@@ -147,6 +217,13 @@ export default function Page() {
           >
             {loading ? "Running..." : "Run workflow"}
           </button>
+          <button
+            type="button"
+            onClick={() => previewWorkflow()}
+            className="rounded-xl border border-white/10 px-4 py-2 text-slate-100 transition hover:border-sky-300"
+          >
+            Preview workflow
+          </button>
           <span className="text-sm text-slate-300">{status}</span>
         </div>
       </section>
@@ -155,12 +232,34 @@ export default function Page() {
         <section className="rounded-2xl border border-white/5 bg-[#1e293b] p-5 shadow-2xl shadow-black/40">
           <h3 className="text-lg font-semibold text-slate-50">Workflow steps</h3>
           <ul className="mt-3 flex flex-col gap-3">
-            {timeline.map((item) => (
-              <StepCard key={item.step.step_id} item={item} />
+            {uiSteps.map((item) => (
+              <li
+                key={item.stepId}
+                className={`rounded-xl border p-4 ${
+                  item.uiStatus === "SUCCESS"
+                    ? "border-green-400/40 bg-green-400/5"
+                    : item.uiStatus === "FAILURE"
+                    ? "border-rose-400/50 bg-rose-400/5"
+                    : item.uiStatus === "RUNNING"
+                    ? "border-sky-300/60 bg-sky-300/5"
+                    : "border-white/5 bg-white/5"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-slate-50">{item.agent}</div>
+                    <div className="text-xs text-slate-300">{item.action}</div>
+                    <div className="text-[11px] text-slate-400">
+                      onSuccess → {item.onSuccess || "end"} | onFailure → {item.onFailure || "end"}
+                    </div>
+                  </div>
+                  <span className="rounded-full border px-3 py-1 text-xs font-semibold text-slate-100">
+                    {item.uiStatus}
+                  </span>
+                </div>
+              </li>
             ))}
-            {!timeline.length && (
-              <div className="text-sm text-slate-300">Awaiting execution...</div>
-            )}
+            {!uiSteps.length && <div className="text-sm text-slate-300">Awaiting preview...</div>}
           </ul>
         </section>
 
