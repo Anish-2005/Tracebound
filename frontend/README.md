@@ -1,3 +1,44 @@
+# Frontend — Tracebound
+
+Purpose
+- The frontend is a Next.js application that provides a clear, interactive UI for composing intents, previewing workflow steps, starting executions, and exploring verifiable traces and on-chain proofs.
+
+Key responsibilities
+- Provide intent input UI and presets for quick testing.
+- Show a step-by-step execution timeline with live status updates and outputs.
+- Display on-chain transaction proofs and links to explorer for verification.
+- Call backend APIs for workflow previews, execution control, and fetching trace data.
+
+Important files & components
+- `src/app/page.tsx` — main page and entry for the UI.
+- `src/app/components/ExecutionTimeline.tsx` — timeline visualization of steps and statuses.
+- `src/app/components/IntentInput.tsx` — intent composition and presets.
+- `src/app/components/WorkflowTrace.tsx` — detailed trace view showing step outputs and branching.
+- `src/app/components/OnchainProof.tsx` — UI for viewing tx hashes and on-chain proof details.
+
+Quickstart (local)
+```powershell
+cd frontend
+npm install
+npm run dev
+# Open http://localhost:3000
+```
+
+Environment variables
+- Copy `.env.local.example` → `.env.local` and set:
+  - `NEXT_PUBLIC_API_BASE` — backend API base URL (default: `http://localhost:4000`).
+
+Build & deployment
+- Build for production:
+```powershell
+cd frontend
+npm run build
+npm run start
+```
+
+Developer notes
+- UI components are written with React and Tailwind CSS; follow existing component patterns when adding new views.
+- The frontend consumes the backend API for previews and real-time execution events; ensure the backend server is running when testing end-to-end flows.
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
