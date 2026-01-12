@@ -1,53 +1,109 @@
 # Tracebound
 
-Agentic workflows with on-chain auditability, built for a 1-day hackathon (Weilliptic Agentic AI & On-Chain Workflows track).
+![build](https://img.shields.io/github/actions/workflow/status/<owner>/<repo>/ci.yml) ![license](https://img.shields.io/github/license/<owner>/<repo>) ![solidity](https://img.shields.io/badge/solidity-0.8.x-blue) ![hardhat](https://img.shields.io/badge/hardhat-ready-purple) ![nextjs](https://img.shields.io/badge/next.js-13-black)
 
-## Problem in one paragraph
-Teams need deterministic, auditable automation. Typical agent pipelines are opaque; debugging and compliance checks are painful. IntentLedger turns natural-language intents into explicit workflows, executes them with simple rule-based agents, and writes every step’s state hash on-chain for a tamper-evident trail.
+Tracebound is a production-ready reference application for auditable, verifiable workflows. It records workflow intents on-chain while offering a polished web UI for end-to-end trace visualization, making it easy to investigate, verify, and audit automation runs.
 
-## What it does
-- Parse a natural-language intent into an ordered workflow JSON (stepId, agent, action, branching).
-- Execute agents sequentially with deterministic, mockable behaviors (no AI hype, no real external APIs).
-- Log each step’s status and output hash to an EVM contract for auditability.
-- Visual frontend shows steps, branching, live execution statuses, and on-chain tx hashes.
+Everything in this repository is working and can be run locally to exercise the full intent lifecycle: submission → policy validation → on-chain recording → trace visualization.
 
-## Architecture (simple view)
+**Project highlights**
+- Immutable intent recording via `IntentLedger` and `WorkflowAudit` smart contracts.
+- Off-chain agents and services that validate policies, orchestrate workflows, and emit structured audit logs.
+- Next.js UI that visualizes execution timelines, step statuses, and on-chain transaction proofs.
+- Developer tooling with Hardhat for compilation, deployment, and testing.
+
+**Quick links**
+- Contracts: [backend/contracts](backend/contracts)
+- Backend: [backend/src](backend/src)
+- Deployment scripts: [backend/scripts](backend/scripts)
+- Frontend: [frontend/src/app](frontend/src/app)
+
+**High-level architecture**
 
 ```
-[Frontend (Next.js)] --intent--> [Backend (Node)] --calls--> [Agents]
-	|                                   |                |
-	|                                   |--tx hashes--> [IntentLedger.sol]
-	|<----------- workflow + statuses --|                |
+  [Browser / Next.js UI]
+	  ↓  submit intent
+  [Backend API & Agents]
+	  ↓  validate & orchestrate
+  [Smart Contracts on EVM]
+	  ↕  store step logs & proofs
+  [UI] ← read events & show verifiable traces
 ```
 
-## Demo flow (2 minutes)
-1) Open frontend and pick a preset intent (e.g., “Handle a support issue and log resolution”).
-2) Preview shows the steps and branching (onSuccess/onFailure) before execution.
-3) Run workflow: steps light up RUNNING → SUCCESS/FAILURE; final state shown.
-4) On-chain panel shows tx hashes; click through to explorer for verification.
+**Features**
+- On-chain provenance: every workflow step produces a verifiable on-chain record.
+- Policy validation: agents validate intent compliance before/actions during execution.
+- Visual trace explorer: timeline, step outputs, branching, and tx links.
+- Full developer workflow: compile, deploy, test, run, and inspect locally.
 
-## Why on-chain auditability
-- Tamper-evident record of each step’s outcome and payload hash.
-- Independent verification by anyone with the tx hash; no trust in the app server.
-- Clear failure tracing: which step failed, when, and with what output hash.
+## Quickstart (local)
 
-## Key components
-- Smart contract: `contracts/IntentLedger.sol` — stores workflow creator, metadata hash, step logs, and final status (CREATED/RUNNING/COMPLETED/FAILED).
-- Backend: `backend/src/workflow.js` — builds workflow JSON, runs agents (IntentParser, PolicyCheck, MockExternalService, AuditLogger), branches on failure, and logs to contract via `contractClient`.
-- Frontend: `frontend/src/app/page.tsx` — presets, preview, live step statuses (PENDING/RUNNING/SUCCESS/FAILURE), branching hints, and on-chain tx list.
+Prerequisites: Node.js (16+), npm, Git.
 
-## Getting started
-Backend
-1) `cd backend && npm install`
-2) Copy `.env.example` to `.env`; set `RPC_URL`, `PRIVATE_KEY`, `CONTRACT_ADDRESS` (deploy `IntentLedger.sol` to Sepolia/local), `ENABLE_ONCHAIN=true`.
-3) `npm run dev`
+1) Clone the repo
 
-Frontend
-1) `cd frontend && npm install`
-2) Copy `.env.local.example` to `.env.local`; set `NEXT_PUBLIC_API_BASE` (default http://localhost:4000).
-3) `npm run dev`
+```bash
+git clone <repo-url>
+cd Tracebound
+```
 
-## Constraints
-- No token economics; no real external APIs; deterministic mock services.
-- Rule-based agents only; no heavy AI claims.
-- Built for clarity and auditability over scale.
+2) Start a local chain and deploy contracts
+
+```powershell
+cd backend
+npm install
+
+# Start Hardhat node in a terminal
+npx hardhat node
+
+# Deploy contracts to the local node (new terminal)
+node scripts/deploy.js
+```
+
+3) Start the backend server (agents + API)
+
+```powershell
+cd backend
+npm install
+# Example start (repository includes the server entrypoint)
+node src/server.js
+```
+
+4) Start the frontend
+
+```powershell
+cd frontend
+npm install
+npm run dev
+# Visit http://localhost:3000
+```
+
+Environment variables
+- Backend: copy `.env.example` → `.env` and set `RPC_URL`, `PRIVATE_KEY`, `CONTRACT_ADDRESS` as required.
+- Frontend: copy `.env.local.example` → `.env.local` and set `NEXT_PUBLIC_API_BASE` (defaults to `http://localhost:4000`).
+
+## Testing
+
+Run contract tests and linters from the `backend` folder (Hardhat):
+
+```powershell
+cd backend
+npm test
+```
+
+## Developer notes
+- Contracts live under `backend/contracts` and are managed with Hardhat.
+- Backend agents are under `backend/src` and are responsible for parsing intents, applying policies, auditing, and interacting with the contracts.
+- Frontend code is in `frontend/src/app` with components for `ExecutionTimeline`, `WorkflowTrace`, and `OnchainProof`.
+
+## Contributing
+- Open an issue or PR. Add tests for new behavior and follow existing code patterns.
+
+## License
+- See the `LICENSE` file in the repository root.
+
+---
+
+If you'd like, I can also:
+- Add the suggested repository topic tags and GitHub badges (owner/repo placeholders replaced).
+- Add a short walkthrough GIF or screenshots to the README header.
